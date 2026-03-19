@@ -1,0 +1,25 @@
+#!/bin/dash
+# turnip-summary: List all assignments
+
+TURNIP_DIR=".turnip"
+ASSIGNMENTS_DIR="$TURNIP_DIR/assignments"
+SUBMISSIONS_DIR="$TURNIP_DIR/submissions"
+
+if [ ! -d "$ASSIGNMENTS_DIR" ]; then
+    exit 0
+fi
+
+for assignment in "$ASSIGNMENTS_DIR"/*; do
+    if [ -d "$assignment" ]; then
+        NAME=$(basename "$assignment")
+        COUNT=0
+        if [ -d "$SUBMISSIONS_DIR/$NAME" ]; then
+            for zid in "$SUBMISSIONS_DIR/$NAME"/*; do
+                if [ -d "$zid" ]; then
+                    COUNT=$((COUNT + 1))
+                fi
+            done
+        fi
+        echo "assignment $NAME: submissions from $COUNT students"
+    fi
+done

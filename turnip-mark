@@ -1,0 +1,90 @@
+#!/bin/dash
+# turnip-mark: Mark all submissions for an assignment
+
+PROG_NAME=$(basename "$0")
+TURNIP_DIR=".turnip"
+ASSIGNMENTS_DIR="$TURNIP_DIR/assignments"
+SUBMISSIONS_DIR="$TURNIP_DIR/submissions"
+
+if [ "$#" -ne 1 ]; then
+    echo "$PROG_NAME: usage: $PROG_NAME <assignment>" >&2
+    exit 1
+fi
+
+ASSIGNMENT="$1"
+
+if [ ! -d "$ASSIGNMENTS_DIR/$ASSIGNMENT" ]; then
+    echo "$PROG_NAME: assignment '$ASSIGNMENT' does not exist" >&2
+    exit 1
+fi
+
+if [ ! -d "$SUBMISSIONS_DIR/$ASSIGNMENT" ]; then
+    echo "$PROG_NAME: no submissions for assignment '$ASSIGNMENT'" >&2
+    exit 1
+fi
+
+# Process each student's submission
+for zid_dir in "$SUBMISSIONS_DIR/$ASSIGNMENT"/*; do
+    if [ -d "$zid_dir" ]; then
+        ZID=$(basename "$zid_dir")
+        
+        # Get the latest submission number
+        LATEST=$(ls -1 "$zid_dir" | tail -1)
+        
+        if [ -d "$zid_dir/$LATEST" ]; then
+            SIZE=$(cat "$zid_dir/$LATEST/size")
+            TIMESTAMP=$(cat "$zid_dir/$LATEST/timestamp" | tr -d '\n')
+            FILENAME=$(ls "$zid_dir/$LATEST/file" 2>/dev/null | xargs basename)
+            
+            echo "*** Student $ZID - submission $LATEST: $FILENAME $SIZE bytes @ $TIMESTAMP"
+            
+            # Run marking tests
+            TOTAL_MARKS=0
+            PASSED=0
+            FAILED=0
+            
+            for test_dir in "$ASSIGNMENTS_DIR/$ASSIGNMENT"/marking*; do
+                if [ -d "$test_dir" ]; then
+                    TEST_NAME=$(basename "$test_dir")
+                    
+                    ARGS=$(cat "$test_dir/arguments" 2>/dev/null)
+                    STDIN=$(cat "$test_dir/stdin" 2>/dev/null)
+                    EXPECTED=$(cat "$test_dir/stdout" 2>/dev/null)
+                    MARKS=$(cat "$test_dir/marks" 2>/dev/null)
+                    
+                    TOTAL_MARKS=$((TOTAL_MARKS + MARKS))
+                    
+                    # Run the test
+                    ACTUAL=$(echo "$STDIN" | python3 "$zid_dir/$LATEST/file" $ARGS 2>&1)
+                    
+                    if [ "$ACTUAL" = "$EXPECTED" ]; then
+                        echo "* Test $TEST_NAME passed ($MARKS marks)."
+                        PASSED=$((PASSED + 1))
+                    else
+                        echo "* Test $TEST_NAME failed (0 marks)."
+                        FAILED=$((FAILED + 1))
+                    fi
+                fi
+            done
+            
+            EARNED=0
+            for test_dir in "$ASSIGNMENTS_DIR/$ASSIGNMENT"/marking*; do
+                if [ -d "$test_dir" ]; then
+                    ARGS=$(cat "$test_dir/arguments" 2>/dev/null)
+                    STDIN=$(cat "$test_dir/stdin" 2>/dev/null)
+                    EXPECTED=$(cat "$test_dir/stdout" 2>/dev/null)
+                    MARKS=$(cat "$test_dir/marks" 2>/dev/null)
+                    
+                    ACTUAL=$(echo "$STDIN" | python3 "$zid_dir/$LATEST/file" $ARGS 2>&1)
+                    
+                    if [ "$ACTUAL" = "$EXPECTED" ]; then
+                        EARNED=$((EARNED + MARKS))
+                    fi
+                fi
+            done
+            
+            echo "** $PASSED tests passed, $FAILED tests failed - mark: $EARNED/$TOTAL_MARKS"
+            echo
+        fi
+    fi
+done

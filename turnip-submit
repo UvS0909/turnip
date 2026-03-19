@@ -1,0 +1,48 @@
+#!/bin/dash
+# turnip-submit: Submit assignment by student
+
+PROG_NAME=$(basename "$0")
+TURNIP_DIR=".turnip"
+SUBMISSIONS_DIR="$TURNIP_DIR/submissions"
+
+if [ "$#" -ne 3 ]; then
+    echo "$PROG_NAME: usage: $PROG_NAME <assignment> <zid> <filename>" >&2
+    exit 1
+fi
+
+ASSIGNMENT="$1"
+ZID="$2"
+FILENAME="$3"
+
+if ! echo "$ZID" | grep -qE '^z[0-9]{7}$'; then
+    echo "$PROG_NAME: invalid zid" >&2
+    exit 1
+fi
+
+if [ ! -f "$FILENAME" ]; then
+    echo "$PROG_NAME: submission file '$FILENAME' not found" >&2
+    exit 1
+fi
+
+if [ ! -d "$SUBMISSIONS_DIR/$ASSIGNMENT" ]; then
+    echo "$PROG_NAME: assignment '$ASSIGNMENT' does not exist" >&2
+    exit 1
+fi
+
+mkdir -p "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID"
+
+SUBMISSION_NUM=1
+while [ -d "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$SUBMISSION_NUM" ]; do
+    SUBMISSION_NUM=$((SUBMISSION_NUM + 1))
+done
+
+mkdir -p "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$SUBMISSION_NUM"
+FILE_SIZE=$(wc -c < "$FILENAME")
+TIMESTAMP=$(date '+%a %b %d %H:%M:%S %Y')
+
+cp "$FILENAME" "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$SUBMISSION_NUM/file"
+echo "$FILE_SIZE" > "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$SUBMISSION_NUM/size"
+echo "$TIMESTAMP" > "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$SUBMISSION_NUM/timestamp"
+
+BASENAME=$(basename "$FILENAME")
+echo "Submission accepted - submission $SUBMISSION_NUM: $BASENAME $FILE_SIZE bytes @ $TIMESTAMP"

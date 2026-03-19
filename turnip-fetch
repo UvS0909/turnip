@@ -1,0 +1,38 @@
+#!/bin/dash
+# turnip-fetch: Retrieve submission
+
+PROG_NAME=$(basename "$0")
+TURNIP_DIR=".turnip"
+SUBMISSIONS_DIR="$TURNIP_DIR/submissions"
+
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+    echo "$PROG_NAME: usage: $PROG_NAME <assignment> <zid> [n]" >&2
+    exit 1
+fi
+
+ASSIGNMENT="$1"
+ZID="$2"
+INDEX="${3:-0}"
+
+if ! echo "$ZID" | grep -qE '^z[0-9]{7}$'; then
+    echo "$PROG_NAME: invalid zid" >&2
+    exit 1
+fi
+
+if [ ! -d "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID" ]; then
+    echo "$PROG_NAME: no submission for $ZID in $ASSIGNMENT" >&2
+    exit 1
+fi
+
+if [ "$INDEX" -eq 0 ]; then
+    # Get last submission
+    LAST=$(ls -1 "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID" | tail -1)
+    cat "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$LAST/file"
+else
+    if [ -d "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$INDEX" ]; then
+        cat "$SUBMISSIONS_DIR/$ASSIGNMENT/$ZID/$INDEX/file"
+    else
+        echo "$PROG_NAME: no submission $INDEX for $ZID in $ASSIGNMENT" >&2
+        exit 1
+    fi
+fi

@@ -1,0 +1,25 @@
+#!/bin/dash
+# turnip-rm: Remove an assignment
+
+PROG_NAME=$(basename "$0")
+TURNIP_DIR=".turnip"
+ASSIGNMENTS_DIR="$TURNIP_DIR/assignments"
+SUBMISSIONS_DIR="$TURNIP_DIR/submissions"
+
+if [ "$#" -ne 1 ]; then
+    echo "$PROG_NAME: usage: $PROG_NAME <assignment>" >&2
+    exit 1
+fi
+
+ASSIGNMENT="$1"
+
+if [ ! -d "$ASSIGNMENTS_DIR/$ASSIGNMENT" ]; then
+    echo "$PROG_NAME: assignment '$ASSIGNMENT' does not exist" >&2
+    exit 1
+fi
+
+# Remove assignment and submissions
+rm -rf "$ASSIGNMENTS_DIR/$ASSIGNMENT"
+rm -rf "$SUBMISSIONS_DIR/$ASSIGNMENT"
+
+echo "assignment $ASSIGNMENT removed"

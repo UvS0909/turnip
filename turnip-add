@@ -1,0 +1,59 @@
+#!/bin/dash
+
+PROG_NAME=$(basename "$0")
+TURNIP_DIR=".turnip"
+ASSIGNMENTS_DIR="$TURNIP_DIR/assignments"
+SUBMISSIONS_DIR="$TURNIP_DIR/submissions"
+
+validate_assignment_name(){
+    if ! echo "$1" | grep -qE '^[a-z][a-zA-Z0-9_]*$'; then
+        echo "Error: invalid assignment name '$1'" >&2
+        exit 1
+    fi
+}
+
+validate_test_file() {
+    if [ ! -f "$1" ]; then
+        echo "Error: tests file '$1' not found" >&2
+        exit 1
+    fi
+}
+
+ASSIGNMENT_NAME="$1"
+TEST_FILE="$2"
+
+if [ "$#" -ne 2 ]; then
+    echo "$PROG_NAME: usage: $PROG_NAME <assignment> <tests-file>" >&2
+    exit 1
+fi
+
+validate_assignment_name "$ASSIGNMENT_NAME" || exit 1
+validate_test_file "$TEST_FILE" || exit 1
+
+# Create .turnip directory if needed
+if [ ! -d "$TURNIP_DIR" ]; then
+    mkdir -p "$TURNIP_DIR"
+    echo "directory .turnip created"
+fi
+
+# Create subdirectories
+mkdir -p "$ASSIGNMENTS_DIR" "$SUBMISSIONS_DIR"
+
+# Check if assignment already exists
+if [ -d "$ASSIGNMENTS_DIR/$ASSIGNMENT_NAME" ]; then
+    echo "$PROG_NAME: assignment $ASSIGNMENT_NAME already exists" >&2
+    exit 1
+fi
+
+# Create assignment directory
+mkdir -p "$ASSIGNMENTS_DIR/$ASSIGNMENT_NAME"
+mkdir -p "$SUBMISSIONS_DIR/$ASSIGNMENT_NAME"
+# Copy test file and extract it
+cp "$TEST_FILE" "$ASSIGNMENTS_DIR/$ASSIGNMENT_NAME/tests.tar"
+cd "$ASSIGNMENTS_DIR/$ASSIGNMENT_NAME"
+tar -xf tests.tar
+
+
+
+echo "assignment $ASSIGNMENT_NAME created"
+

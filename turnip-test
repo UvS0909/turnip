@@ -1,0 +1,51 @@
+#!/bin/dash
+# turnip-test: Run tests on an assignment
+
+PROG_NAME=$(basename "$0")
+TURNIP_DIR=".turnip"
+ASSIGNMENTS_DIR="$TURNIP_DIR/assignments"
+
+if [ "$#" -ne 2 ]; then
+    echo "$PROG_NAME: usage: $PROG_NAME <assignment> <file>" >&2
+    exit 1
+fi
+
+ASSIGNMENT="$1"
+SUBMISSION_FILE="$2"
+
+if [ ! -d "$ASSIGNMENTS_DIR/$ASSIGNMENT" ]; then
+    echo "$PROG_NAME: assignment '$ASSIGNMENT' does not exist" >&2
+    exit 1
+fi
+
+if [ ! -f "$SUBMISSION_FILE" ]; then
+    echo "$PROG_NAME: submission file '$SUBMISSION_FILE' not found" >&2
+    exit 1
+fi
+
+TESTS_DIR="$ASSIGNMENTS_DIR/$ASSIGNMENT"
+PASSED=0
+FAILED=0
+
+for test_dir in "$TESTS_DIR"/test_* "$TESTS_DIR"/marking_*; do
+    if [ -d "$test_dir" ]; then
+        TEST_NAME=$(basename "$test_dir")
+
+        ARGS=$(cat "$test_dir/arguments" 2>/dev/null)
+        STDIN=$(cat "$test_dir/stdin" 2>/dev/null)
+        EXPECTED=$(cat "$test_dir/stdout" 2>/dev/null)
+
+        # Run the test
+        ACTUAL=$(echo "$STDIN" | python3 "$SUBMISSION_FILE" $ARGS 2>&1)
+
+        if [ "$ACTUAL" = "$EXPECTED" ]; then
+            echo "✓ $TEST_NAME"
+            PASSED=$((PASSED + 1))
+        else
+            echo "✗ $TEST_NAME"
+            FAILED=$((FAILED + 1))
+        fi
+    fi
+done
+
+echo "$PASSED passed, $FAILED failed"

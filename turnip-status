@@ -1,0 +1,40 @@
+#!/bin/dash
+# turnip-status: Show student submissions
+
+PROG_NAME=$(basename "$0")
+TURNIP_DIR=".turnip"
+SUBMISSIONS_DIR="$TURNIP_DIR/submissions"
+
+if [ "$#" -ne 1 ]; then
+    echo "$PROG_NAME: usage: $PROG_NAME <zid>" >&2
+    exit 1
+fi
+
+ZID="$1"
+
+if ! echo "$ZID" | grep -qE '^z[0-9]{7}$'; then
+    echo "$PROG_NAME: invalid zid" >&2
+    exit 1
+fi
+
+if [ ! -d "$SUBMISSIONS_DIR" ]; then
+    exit 0
+fi
+
+for assignment in "$SUBMISSIONS_DIR"/*; do
+    if [ -d "$assignment" ]; then
+        NAME=$(basename "$assignment")
+        if [ -d "$assignment/$ZID" ]; then
+            COUNT=$(ls -1 "$assignment/$ZID" | wc -l | tr -d ' ')
+            echo "* $COUNT submissions for $NAME"
+            for subnum in "$assignment/$ZID"/*; do
+                if [ -d "$subnum" ]; then
+                    NUM=$(basename "$subnum")
+                    SIZE=$(cat "$subnum/size" | tr -d ' ')
+                    TIMESTAMP=$(cat "$subnum/timestamp" | tr -d ' ')
+                    echo "submission $NUM: file $SIZE bytes @ $TIMESTAMP"
+                fi
+            done
+        fi
+    fi
+done
